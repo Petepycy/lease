@@ -50,3 +50,16 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.position}"
+
+class SlideshowImage(models.Model):
+    title = models.CharField(max_length=100)
+    image = models.ImageField(upload_to='slideshow/')
+    description = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+        
+    def __str__(self):
+        return self.title

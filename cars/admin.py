@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Car, Lease, Employee
+from .models import Car, Lease, Employee, SlideshowImage
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
@@ -21,3 +21,10 @@ class EmployeeAdmin(admin.ModelAdmin):
     list_editable = ('order',)
     search_fields = ('name', 'position', 'email', 'linkedin_url')
     list_filter = ('position',)
+
+@admin.register(SlideshowImage)
+class SlideshowImageAdmin(admin.ModelAdmin):
+    list_display = ('title', 'image', 'active', 'order')
+    list_editable = ('active', 'order')
+    search_fields = ('title', 'description')
+    list_filter = ('active',)

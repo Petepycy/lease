@@ -45,7 +45,7 @@ const NewCars = () => {
         return false;
       }
     }
-    if (filters.bodyType && car.bodyType.toLowerCase() !== filters.bodyType.toLowerCase()) {
+    if (filters.bodyType && car.bodyType && car.bodyType.toLowerCase() !== filters.bodyType.toLowerCase()) {
       return false;
     }
     return true;
@@ -53,6 +53,18 @@ const NewCars = () => {
 
   const handleCarSelect = (car) => {
     setSelectedCar(car);
+    // Scroll to calculator for better UX
+    document.querySelector('.calculator-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '/images/car-placeholder.jpg';
+    // If the path already includes the full URL, use it as is
+    if (imagePath.startsWith('http')) return imagePath;
+    // If the path already includes /media/, don't add it again
+    if (imagePath.startsWith('/media/')) return `http://localhost:8000${imagePath}`;
+    // Otherwise, construct the full URL
+    return `http://localhost:8000/media/${imagePath}`;
   };
 
   if (loading) {
@@ -64,23 +76,17 @@ const NewCars = () => {
   }
 
   return (
-    <div className="new-cars-page">
-      <section className="hero">
-        <div className="container">
-          <h1>New Cars for Lease</h1>
-          <p>Find your perfect car with flexible leasing options</p>
-        </div>
-      </section>
-
-      <div className="container main-content">
-        <div className="filters">
-          <h2>Filter Cars</h2>
-          <div className="filter-group">
+    <div className="new-cars">
+      <div className="container">
+        <div className="new-cars__filters">
+          <h2 className="section-title">Filter Cars</h2>
+          <div className="new-cars__filter-group">
             <label htmlFor="make">Make</label>
             <select
               id="make"
               value={filters.make}
               onChange={(e) => setFilters({ ...filters, make: e.target.value })}
+              className="new-cars__select"
             >
               <option value="">All Makes</option>
               <option value="BMW">BMW</option>
@@ -90,12 +96,13 @@ const NewCars = () => {
             </select>
           </div>
 
-          <div className="filter-group">
+          <div className="new-cars__filter-group">
             <label htmlFor="priceRange">Price Range</label>
             <select
               id="priceRange"
               value={filters.priceRange}
               onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
+              className="new-cars__select"
             >
               <option value="">All Prices</option>
               <option value="0-30000">Under $30,000</option>
@@ -106,12 +113,13 @@ const NewCars = () => {
             </select>
           </div>
 
-          <div className="filter-group">
+          <div className="new-cars__filter-group">
             <label htmlFor="bodyType">Body Type</label>
             <select
               id="bodyType"
               value={filters.bodyType}
               onChange={(e) => setFilters({ ...filters, bodyType: e.target.value })}
+              className="new-cars__select"
             >
               <option value="">All Types</option>
               <option value="Sedan">Sedan</option>
@@ -122,32 +130,42 @@ const NewCars = () => {
           </div>
         </div>
 
-        <div className="cars-grid">
-          {filteredCars.map((car) => (
-            <div
-              key={car.id}
-              className={`car-card ${selectedCar?.id === car.id ? 'selected' : ''}`}
-              onClick={() => handleCarSelect(car)}
-            >
-              <img src={car.image} alt={car.model} />
-              <div className="car-info">
-                <h3>{car.make} {car.model}</h3>
-                <p className="price">From ${car.price.toLocaleString()}</p>
-                <p className="description">{car.description}</p>
-                <div className="features">
-                  <span>{car.mileage} MPG</span>
-                  <span>{car.transmission}</span>
-                  <span>{car.bodyType}</span>
+        <div className="new-cars__content">
+          <div className="new-cars__grid">
+            {filteredCars.length > 0 ? (
+              filteredCars.map((car) => (
+                <div
+                  key={car.id}
+                  className={`new-cars__card ${selectedCar?.id === car.id ? 'new-cars__card--selected' : ''}`}
+                  onClick={() => handleCarSelect(car)}
+                >
+                  <div className="new-cars__card-image">
+                    <img src={getImageUrl(car.image)} alt={`${car.make} ${car.model}`} />
+                  </div>
+                  <div className="new-cars__card-info">
+                    <h3 className="new-cars__card-title">{car.make} {car.model}</h3>
+                    <p className="new-cars__card-price">${car.price ? car.price.toLocaleString() : '0'}</p>
+                    <p className="new-cars__card-description">{car.description || 'No description available'}</p>
+                    <div className="new-cars__card-features">
+                      {car.mileage && <span>{car.mileage} MPG</span>}
+                      {car.transmission && <span>{car.transmission}</span>}
+                      {car.bodyType && <span>{car.bodyType}</span>}
+                    </div>
+                    <Link to={`/car-details/${car.id}`} className="btn btn--secondary">View Details</Link>
+                  </div>
                 </div>
-                <button className="btn-secondary">View Details</button>
+              ))
+            ) : (
+              <div className="new-cars__no-results">
+                <p>No cars match your current filters. Try adjusting your criteria.</p>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
 
-        <div className="calculator-section">
-          <h2>Calculate Your Lease Payment</h2>
-          <LeasingCalculator selectedCar={selectedCar} />
+          <div className="new-cars__calculator">
+            <h2 className="section-title">Calculate Your Lease Payment</h2>
+            <LeasingCalculator selectedCar={selectedCar} />
+          </div>
         </div>
       </div>
     </div>

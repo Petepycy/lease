@@ -3,8 +3,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-from .models import Car, Lease, Employee
-from .serializers import CarSerializer, LeaseSerializer, UserSerializer, EmployeeSerializer
+from .models import Car, Lease, Employee, SlideshowImage
+from .serializers import CarSerializer, LeaseSerializer, UserSerializer, EmployeeSerializer, SlideshowImageSerializer
 from django.shortcuts import get_object_or_404
 
 # Create your views here.
@@ -47,4 +47,9 @@ class UserViewSet(viewsets.ModelViewSet):
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
+    permission_classes = [permissions.AllowAny]
+
+class SlideshowImageViewSet(viewsets.ModelViewSet):
+    queryset = SlideshowImage.objects.all()
+    serializer_class = SlideshowImageSerializer
     permission_classes = [permissions.AllowAny]

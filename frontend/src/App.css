@@ -59,8 +59,12 @@ img {
 
 .app-main {
   flex-grow: 1; /* Ensures main content takes available space */
-  padding-top: 0;
   padding-bottom: 60px; /* Add space for footer */
+  /* No top padding by default */
+}
+
+.app-main.main-content-padded {
+  padding-top: 90px; /* Add top padding only on non-home pages */
 }
 
 /* Header Styles */
@@ -170,45 +174,72 @@ img {
 }
 
 .app-header {
-  position: absolute;
+  position: sticky; /* Make header sticky on all pages */
   top: 0;
-  left: 0;
   width: 100%;
-  z-index: 10;
-  background: transparent;
+  z-index: 20;
+  background-color: #1a1a2e; /* Consistent dark background */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow for depth */
+  padding: 10px 0; /* Reduced padding for smaller header height */
 }
 
 .app-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 0;
+  padding: 10px 0; /* Reduced padding for smaller header height */
 }
 
-/* .app-logo {
-  font-size: 1.5rem;
+.app-logo {
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: #ffffff;
   text-decoration: none;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .app-nav-links,
 .app-auth-links {
   display: flex;
   align-items: center;
-  gap: 25px;
+  gap: 35px;
 }
 
 .app-nav-links a {
-  color: var(--text-color);
+  color: #ffffff;
   font-weight: 500;
+  text-decoration: none;
   transition: color 0.3s;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
 }
 
-.app-nav-links a:hover {
-  color: var(--primary-color);
+.app-nav-links a:hover,
+.app-nav-links a.active {
+  color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
-} */
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Adjusting the Login Button Style within Header */
+.app-auth-links .btn-primary {
+  background-color: transparent;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.app-auth-links .btn-primary:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+}
 
 /* Buttons */
 .btn-primary {

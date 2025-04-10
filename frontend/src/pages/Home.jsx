@@ -1,29 +1,82 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'swiper/css/effect-fade';
 import '../styles/Home.css';
+import axios from 'axios';
 
 const Home = () => {
+  const [slideshowImages, setSlideshowImages] = useState([]);
+  const [cars, setCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch slideshow images
+        const slideshowResponse = await axios.get('http://localhost:8000/api/slideshow-images/');
+        console.log('Slideshow images:', slideshowResponse.data);
+        setSlideshowImages(slideshowResponse.data.filter(img => img.active));
+        
+        // Fetch cars
+        const carsResponse = await axios.get('http://localhost:8000/api/cars/');
+        console.log('Cars data:', carsResponse.data);
+        setCars(carsResponse.data);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load data');
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Helper function to correctly format image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    // If the path already includes the full URL, use it as is
+    if (imagePath.startsWith('http')) return imagePath;
+    // If the path already includes /media/, don't add it again
+    if (imagePath.startsWith('/media/')) return `http://localhost:8000${imagePath}`;
+    // Otherwise, construct the full URL
+    return `http://localhost:8000/media/${imagePath}`;
+  };
+
+  // Helper function to group cars into pairs for slides
+  const getCarPairs = () => {
+    const pairs = [];
+    for (let i = 0; i < cars.length; i += 2) {
+      if (i + 1 < cars.length) {
+        // If we have a pair
+        pairs.push([cars[i], cars[i + 1]]);
+      } else {
+        // If we have an odd number of cars, the last one goes alone
+        pairs.push([cars[i]]);
+      }
+    }
+    return pairs;
+  };
+
   return (
     <div className="home-page">
       <section className="hero">
-        <div className="hero-content">
-          <h1>Leasing From D&M</h1>
-          <Link to="/new-cars" className="btn-primary">FIND A CAR</Link>
-        </div>
-      </section>
-
-      <section className="featured-cars">
-        <div className="container">
-          <h2>Featured Vehicles</h2>
+        {loading ? (
+          <div className="loading">Loading...</div>
+        ) : error ? (
+          <div className="error">{error}</div>
+        ) : slideshowImages.length > 0 ? (
           <Swiper
-            modules={[Autoplay, Pagination, Navigation]}
+            modules={[Autoplay, Pagination, EffectFade]}
+            effect="fade"
             slidesPerView={1}
-            spaceBetween={30}
             loop={true}
             autoplay={{
               delay: 5000,
@@ -32,34 +85,73 @@ const Home = () => {
             pagination={{
               clickable: true,
             }}
-            navigation={true}
-            className="mySwiper"
+            className="hero-swiper"
           >
-            <SwiperSlide>
-              <div className="car-card">
-                <img src="/images/tesla-model3.jpg" alt="Tesla Model 3" />
-                <h3>2023 Tesla Model 3</h3>
-                <p>Starting from $399/month</p>
-                <Link to="/new-cars" className="btn-secondary">Learn More</Link>
-              </div>
-            </SwiperSlide>
-            <SwiperSlide>
-              <div className="car-card">
-                <img src="/images/bmw-3series.jpg" alt="BMW 3 Series" />
-                <h3>2023 BMW 3 Series</h3>
-                <p>Starting from $499/month</p>
-                <Link to="/new-cars" className="btn-secondary">Learn More</Link>
-              </div>
-            </SwiperSlide>
-            <SwiperSlide>
-              <div className="car-card">
-                <img src="/images/mercedes-cclass.jpg" alt="Mercedes C-Class" />
-                <h3>2023 Mercedes C-Class</h3>
-                <p>Starting from $549/month</p>
-                <Link to="/new-cars" className="btn-secondary">Learn More</Link>
-              </div>
-            </SwiperSlide>
+            {slideshowImages.map((image) => (
+              <SwiperSlide key={image.id}>
+                <div 
+                  className="hero-slide" 
+                  style={{ backgroundImage: `url(${getImageUrl(image.image)})` }}
+                >
+                  <div className="overlay"></div>
+                  <div className="hero-content">
+                    <h1>{image.title}</h1>
+                    <p>{image.description}</p>
+                    <Link to="/new-cars" className="btn-primary">FIND A CAR</Link>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
           </Swiper>
+        ) : (
+          <div className="hero-content">
+            <h1>Leasing From D&M</h1>
+            <Link to="/new-cars" className="btn-primary">FIND A CAR</Link>
+          </div>
+        )}
+      </section>
+
+      <section className="featured-cars">
+        <div className="container">
+          <h2>Featured Vehicles</h2>
+          {loading ? (
+            <div className="loading">Loading cars...</div>
+          ) : error ? (
+            <div className="error">{error}</div>
+          ) : cars.length > 0 ? (
+            <Swiper
+              modules={[Autoplay, Pagination, Navigation]}
+              slidesPerView={1}
+              spaceBetween={30}
+              loop={true}
+              autoplay={{
+                delay: 5000,
+                disableOnInteraction: false,
+              }}
+              pagination={{
+                clickable: true,
+              }}
+              navigation={true}
+              className="mySwiper"
+            >
+              {getCarPairs().map((pair, index) => (
+                <SwiperSlide key={index}>
+                  <div className="car-pair">
+                    {pair.map(car => (
+                      <div className="car-card" key={car.id}>
+                        <img src={getImageUrl(car.image)} alt={`${car.year} ${car.make} ${car.model}`} />
+                        <h3>{car.year} {car.make} {car.model}</h3>
+                        <p>Starting from ${car.price}/month</p>
+                        <Link to={`/new-cars/${car.id}`} className="btn-secondary">Learn More</Link>
+                      </div>
+                    ))}
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          ) : (
+            <div className="no-cars">No featured vehicles available</div>
+          )}
         </div>
       </section>
 

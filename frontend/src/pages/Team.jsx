@@ -35,12 +35,6 @@ const Team = () => {
 
   return (
     <div className="team-page">
-      <section className="hero">
-        <div className="container">
-          <h1>Our Team</h1>
-          <p>Meet the people behind Simplease</p>
-        </div>
-      </section>
 
       <div className="container">
         <div className="team-grid">

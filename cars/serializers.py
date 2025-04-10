@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Car, Lease, Employee
+from .models import Car, Lease, Employee, SlideshowImage
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -34,4 +34,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'phone',
             'linkedin_url',
             'order'
-        ] 
+        ]
+
+class SlideshowImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SlideshowImage
+        fields = ['id', 'title', 'image', 'description', 'active', 'order'] 
