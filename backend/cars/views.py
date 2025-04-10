@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
 from .models import Car, Employee, SlideshowImage
-from .serializers import CarSerializer, EmployeeSerializer
+from .serializers import CarSerializer, EmployeeSerializer, SlideshowImageSerializer
 
 class CarViewSet(viewsets.ModelViewSet):
     queryset = Car.objects.all()
@@ -19,5 +19,5 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
 class SlideshowImageViewSet(viewsets.ModelViewSet):
     queryset = SlideshowImage.objects.all()
-    serializer_class = CarSerializer
+    serializer_class = SlideshowImageSerializer
     permission_classes = [permissions.AllowAny] 
