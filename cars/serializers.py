@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Car, CarBrand, Lease, Employee, SlideshowImage, ProcessStep, ContactSubmission, LeasingParameter
+from .models import Car, CarBrand, Lease, Employee, SlideshowImage, ProcessStep, ContactSubmission, LeasingParameter, CarImage
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -7,10 +7,43 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name')
 
+class CarImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CarImage
+        fields = ['id', 'image', 'image_url', 'caption', 'is_default', 'display_order']
+    
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return None
+
 class CarSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+    car_images = CarImageSerializer(many=True, read_only=True)
+    default_image_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = Car
         fields = '__all__'
+    
+    def get_default_image_url(self, obj):
+        if obj.default_image():
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.default_image()) if request else obj.default_image()
+        return None
+    
+    def get_images(self, obj):
+        """Return a list of all image URLs"""
+        image_urls = obj.get_all_images()
+        request = self.context.get('request')
+        
+        # Create absolute URLs if request is available
+        if request and image_urls:
+            return [request.build_absolute_uri(url) for url in image_urls]
+        return image_urls
 
 class CarBrandSerializer(serializers.ModelSerializer):
     class Meta:

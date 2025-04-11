@@ -5,12 +5,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from decimal import Decimal
-from .models import Car, Lease, Employee, SlideshowImage, CarBrand, ProcessStep, ContactSubmission, LeasingParameter
+from .models import Car, Lease, Employee, SlideshowImage, CarBrand, ProcessStep, ContactSubmission, LeasingParameter, CarImage
 from .serializers import (
     CarSerializer, LeaseSerializer, UserSerializer, EmployeeSerializer, 
     SlideshowImageSerializer, CarBrandSerializer, ProcessStepSerializer, 
     ContactSubmissionSerializer, LeasingParameterSerializer,
-    LeasingCalculationRequestSerializer, LeasingCalculationResponseSerializer
+    LeasingCalculationRequestSerializer, LeasingCalculationResponseSerializer,
+    CarImageSerializer
 )
 from django.shortcuts import get_object_or_404
 
@@ -20,6 +21,18 @@ class CarViewSet(viewsets.ModelViewSet):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def list(self, request, *args, **kwargs):
+        """Override to ensure images are properly included in list view"""
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Override to ensure images are properly included"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, context={'request': request})
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def lease(self, request, pk=None):
@@ -35,6 +48,27 @@ class CarViewSet(viewsets.ModelViewSet):
             car.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=True, methods=['get'])
+    def images(self, request, pk=None):
+        """Return all images for a specific car"""
+        car = self.get_object()
+        images = car.car_images.all()
+        serializer = CarImageSerializer(images, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class CarImageViewSet(viewsets.ModelViewSet):
+    queryset = CarImage.objects.all()
+    serializer_class = CarImageSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get_queryset(self):
+        """Filter by car if car_id param is provided"""
+        queryset = CarImage.objects.all()
+        car_id = self.request.query_params.get('car_id')
+        if car_id:
+            queryset = queryset.filter(car_id=car_id)
+        return queryset
 
 class LeaseViewSet(viewsets.ModelViewSet):
     serializer_class = LeaseSerializer

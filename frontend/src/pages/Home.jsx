@@ -28,8 +28,13 @@ const Home = () => {
         // Fetch cars
         const carsResponse = await axios.get('http://localhost:8000/api/cars/');
         console.log('Cars data:', carsResponse.data);
-        setCars(carsResponse.data);
         
+        // Sort cars by price in descending order and take top 6
+        const sortedCars = [...carsResponse.data]
+          .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
+          .slice(0, 6);
+        
+        setCars(sortedCars);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -42,14 +47,17 @@ const Home = () => {
   }, []);
 
   // Helper function to correctly format image URL
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return '';
-    // If the path already includes the full URL, use it as is
-    if (imagePath.startsWith('http')) return imagePath;
-    // If the path already includes /media/, don't add it again
-    if (imagePath.startsWith('/media/')) return `http://localhost:8000${imagePath}`;
-    // Otherwise, construct the full URL
-    return `http://localhost:8000/media/${imagePath}`;
+  const getImageUrl = (car) => {
+    // Use the default_image_url if available
+    if (car.default_image_url) return car.default_image_url;
+    
+    // Fallback to the first car image if available
+    if (car.car_images && car.car_images.length > 0) {
+      return car.car_images[0].image_url;
+    }
+    
+    // If no images are available, return a placeholder
+    return '/placeholder-car.jpg';
   };
 
   // Helper function to group cars into pairs for slides
@@ -93,7 +101,7 @@ const Home = () => {
               <SwiperSlide key={image.id}>
                 <div 
                   className="hero-slide" 
-                  style={{ backgroundImage: `url(${getImageUrl(image.image)})` }}
+                  style={{ backgroundImage: `url(${getImageUrl({ default_image_url: image.image })})` }}
                 >
                   <div className="overlay"></div>
                   <div className="hero-content">
@@ -141,10 +149,10 @@ const Home = () => {
                   <div className="car-pair">
                     {pair.map(car => (
                       <div className="car-card" key={car.id}>
-                        <img src={getImageUrl(car.image)} alt={`${car.year} ${car.make} ${car.model}`} />
+                        <img src={getImageUrl(car)} alt={`${car.year} ${car.make} ${car.model}`} />
                         <h3>{car.year} {car.make} {car.model}</h3>
                         <p>Starting from ${car.price}/month</p>
-                        <Link to={`/new-cars/${car.id}`} className="btn-secondary">Learn More</Link>
+                        <Link to={`/car-details/${car.id}`} className="btn-secondary">Learn More</Link>
                       </div>
                     ))}
                   </div>

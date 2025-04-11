@@ -9,13 +9,55 @@ class Car(models.Model):
     mileage = models.IntegerField()
     color = models.CharField(max_length=50)
     description = models.TextField()
-    image = models.ImageField(upload_to='cars/')
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.year} {self.make} {self.model}"
+    
+    def default_image(self):
+        """Returns the default image for this car or the first image if no default is set"""
+        default_img = self.car_images.filter(is_default=True).first()
+        if default_img:
+            return default_img.image.url
+        # Return first image or None if no images
+        first_img = self.car_images.first()
+        return first_img.image.url if first_img else None
+    
+    def get_all_images(self):
+        """Returns all images for this car, with default first"""
+        # Get the default image first (if any)
+        images = list(self.car_images.filter(is_default=True))
+        # Then get all non-default images
+        images.extend(self.car_images.filter(is_default=False))
+        
+        # Return image URLs
+        return [img.image.url for img in images]
+
+class CarImage(models.Model):
+    """Model for storing multiple images for a car"""
+    car = models.ForeignKey(Car, related_name='car_images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='cars/')
+    caption = models.CharField(max_length=200, blank=True, null=True)
+    is_default = models.BooleanField(default=False)
+    display_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['is_default', 'display_order', 'created_at']
+        verbose_name = 'Car Image'
+        verbose_name_plural = 'Car Images'
+        
+    def __str__(self):
+        return f"Image for {self.car} - {'Default' if self.is_default else 'Additional'}"
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one default image per car"""
+        if self.is_default:
+            # Set all other images for this car to non-default
+            CarImage.objects.filter(car=self.car, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
 
 class LeasingParameter(models.Model):
     """Model for storing parameters that affect leasing calculations"""

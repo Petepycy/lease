@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/NewCars.css';
 
+const FALLBACK_IMAGE_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNOTAgODBIMTEwQzExNS41MjMgODAgMTIwIDg0LjQ3NzIgMTIwIDkwVjExMEMxMjAgMTE1LjUyMyAxMTUuNTIzIDEyMCAxMTAgMTIwSDkwQzg0LjQ3NzIgMTIwIDgwIDExNS41MjMgODAgMTEwVjkwQzgwIDg0LjQ3NzIgODQuNDc3MiA4MCA5MCA4MFoiIGZpbGw9IiM5Q0EzQUYiLz48cGF0aCBkPSJNMTEwIDg1SDkwQzg3LjIzODYgODUgODUgODcuMjM4NiA4NSA5MFYxMTBDODUgMTEyLjc2MSA4Ny4yMzg2IDExNSA5MCAxMTVIMTEwQzExMi43NjEgMTE1IDExNSAxMTIuNzYxIDExNSAxMTBWOTBDMTE1IDg3LjIzODYgMTEyLjc2MSA4NSAxMTAgODVaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==';
+
 const useResponsiveGrid = () => {
   const [carsPerPage, setCarsPerPage] = useState(getInitialCarsPerPage());
 
@@ -85,11 +87,20 @@ const NewCars = () => {
   const currentCars = filteredCars.slice(indexOfFirstCar, indexOfLastCar);
   const totalPages = Math.ceil(filteredCars.length / carsPerPage);
 
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return '/images/car-placeholder.jpg';
-    if (imagePath.startsWith('http')) return imagePath;
-    if (imagePath.startsWith('/media/')) return `http://localhost:8000${imagePath}`;
-    return `http://localhost:8000/media/${imagePath}`;
+  const getImageUrl = (car) => {
+    // First try to get the default image URL
+    if (car.default_image_url) {
+      return car.default_image_url;
+    }
+    
+    // Then try to get the first image from car_images
+    if (car.car_images && car.car_images.length > 0) {
+      const firstImage = car.car_images[0];
+      return firstImage.image_url || firstImage.image;
+    }
+    
+    // Return the base64 fallback image
+    return FALLBACK_IMAGE_BASE64;
   };
 
   if (loading) {
@@ -164,7 +175,14 @@ const NewCars = () => {
                   className="new-cars__card"
                 >
                   <div className="new-cars__card-image">
-                    <img src={getImageUrl(car.image)} alt={`${car.make} ${car.model}`} />
+                    <img 
+                      src={getImageUrl(car)} 
+                      alt={`${car.make} ${car.model}`}
+                      onError={(e) => {
+                        e.target.onerror = null; // Prevent infinite loop
+                        e.target.src = FALLBACK_IMAGE_BASE64;
+                      }}
+                    />
                   </div>
                   <div className="new-cars__card-info">
                     <h3 className="new-cars__card-title">{car.make} {car.model}</h3>

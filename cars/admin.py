@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import Car, Lease, Employee, SlideshowImage, CarBrand, ProcessStep, ContactSubmission, LeasingParameter
+from .models import Car, Lease, Employee, SlideshowImage, CarBrand, ProcessStep, ContactSubmission, LeasingParameter, CarImage
+
+class CarImageInline(admin.TabularInline):
+    model = CarImage
+    extra = 1
+    fields = ('image', 'caption', 'is_default', 'display_order')
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
@@ -7,6 +12,27 @@ class CarAdmin(admin.ModelAdmin):
     list_filter = ('make', 'year', 'is_available')
     search_fields = ('make', 'model', 'description')
     readonly_fields = ('created_at', 'updated_at')
+    inlines = [CarImageInline]
+    fieldsets = (
+        ('Car Information', {
+            'fields': ('make', 'model', 'year', 'price', 'color', 'mileage', 'is_available')
+        }),
+        ('Description', {
+            'fields': ('description',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+@admin.register(CarImage)
+class CarImageAdmin(admin.ModelAdmin):
+    list_display = ('car', 'caption', 'is_default', 'display_order', 'created_at')
+    list_editable = ('is_default', 'display_order')
+    list_filter = ('is_default', 'car__make', 'car__model')
+    search_fields = ('car__make', 'car__model', 'caption')
+    ordering = ('car', '-is_default', 'display_order')
 
 @admin.register(Lease)
 class LeaseAdmin(admin.ModelAdmin):
@@ -76,4 +102,23 @@ class LeasingParameterAdmin(admin.ModelAdmin):
             'fields': ('base_rate_multiplier', 'annual_mileage_factor', 
                       'contract_length_factor', 'initial_payment_discount', 'package_base_cost')
         }),
+    )
+
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'created_at', 'is_processed')
+    list_filter = ('is_processed', 'created_at', 'preferred_contact')
+    search_fields = ('name', 'email', 'phone', 'subject', 'message')
+    readonly_fields = ('created_at',)
+    list_editable = ('is_processed',)
+    fieldsets = (
+        ('Contact Information', {
+            'fields': ('name', 'email', 'phone', 'preferred_contact')
+        }),
+        ('Message Details', {
+            'fields': ('subject', 'message', 'preferred_vehicle', 'budget_range')
+        }),
+        ('Status', {
+            'fields': ('is_processed', 'created_at')
+        })
     )

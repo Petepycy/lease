@@ -1,0 +1,131 @@
+/* Auth Pages Styling */
+.login,
+.register {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)),
+              url('/images/auth-bg.jpg') center/cover no-repeat;
+}
+
+.login__inner,
+.register__inner {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+}
+
+.login__title,
+.register__title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.login__form,
+.register__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.login__form-group,
+.register__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login__label,
+.register__label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.login__input,
+.register__input {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.login__input:focus,
+.register__input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.login__button,
+.register__button {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 1rem;
+}
+
+.login__button:hover,
+.register__button:hover {
+  background-color: var(--primary-color-dark);
+}
+
+.login__button:disabled,
+.register__button:disabled {
+  background-color: var(--text-color-light);
+  cursor: not-allowed;
+}
+
+.login__text,
+.register__text {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--text-color);
+}
+
+.login__link,
+.register__link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login__link:hover,
+.register__link:hover {
+  text-decoration: underline;
+}
+
+.login__error,
+.register__error {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .login__inner,
+  .register__inner {
+    padding: 2rem;
+  }
+  
+  .login__title,
+  .register__title {
+    font-size: 1.75rem;
+  }
+} 

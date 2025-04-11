@@ -20,7 +20,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--background-color);
+  /* background-color defined in App.css or via Tailwind */
 }
 
 code {
@@ -28,6 +28,8 @@ code {
     monospace;
 }
 
+/* Removed conflicting root styles - rely on App.css or Tailwind */
+/*
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -35,14 +37,17 @@ code {
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #242424; 
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+*/
 
+/* Removed conflicting global 'a' styles - rely on App.css or Tailwind */
+/*
 a {
   font-weight: 500;
   color: #646cff;
@@ -51,12 +56,18 @@ a {
 a:hover {
   color: #535bf2;
 }
+*/
 
+/* Removed conflicting global 'h1' styles - rely on component styles or Tailwind */
+/*
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
+*/
 
+/* Removed conflicting global 'button' styles - rely on component styles or Tailwind */
+/*
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -75,16 +86,11 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+*/
 
+/* Keep prefers-color-scheme for dark/light mode base if needed, but simplify */
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  /* :root styles removed as they might conflict */
+  /* Example: Define light mode variables if not using Tailwind's dark mode */
+  /* body { background-color: #ffffff; color: #213547; } */
 }

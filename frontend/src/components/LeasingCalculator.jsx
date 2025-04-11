@@ -1,53 +1,43 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FaInfoCircle, FaCheck } from 'react-icons/fa'; // Using react-icons for potential info icons
-// import '../styles/LeasingCalculator.css'; // Temporarily comment out to check for conflicts
+import { FaInfoCircle, FaCheck, FaStar, FaChevronRight, FaChevronLeft } from 'react-icons/fa'; // Added Chevrons
+import '../styles/LeasingCalculator.css'; // Ensure CSS is imported
 
-// Helper function to format numbers (optional, for display)
-const formatNumber = (num) => num?.toLocaleString('pl-PL') || '';
+// Helper function to format numbers
+const formatNumber = (num) => num?.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0';
 
-const TabButton = ({ id, current, label, onClick }) => (
-  <button
-    onClick={() => onClick(id)}
-    className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-      current === id
-        ? 'text-teal-600 border-b-2 border-teal-600'
-        : 'text-gray-500 hover:text-gray-700'
-    }`}
-  >
-    {label}
-  </button>
-);
-
-const OptionButton = ({ value, isSelected, onClick, children, disabled = false }) => (
+// Simplified Toggle Button
+const ToggleButton = ({ value, isSelected, onClick, children, disabled = false }) => (
   <button
     onClick={() => onClick(value)}
     disabled={disabled}
-    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-      isSelected
-        ? 'bg-teal-600 text-white shadow-sm'
-        : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-500'
-    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`toggle-button ${isSelected ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
   >
     {children}
   </button>
 );
 
-const PackageOption = ({ title, price, features, isSelected, onSelect }) => (
+// Package Option Card
+const PackageOption = ({ title, features, isSelected, onSelect, isRecommended = false }) => (
   <div
     onClick={onSelect}
-    className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-      isSelected ? 'border-teal-500 bg-teal-50/30' : 'border-gray-200 hover:border-teal-300'
-    }`}
+    className={`package-option ${isSelected ? 'active' : ''}`}
   >
-    <div className="flex justify-between items-center mb-3">
-      <h4 className="font-medium text-gray-900">{title}</h4>
-      <span className="text-sm text-teal-600 font-medium">+{price} PLN</span>
+    {isRecommended && (
+      <div className="recommendation-badge">
+        <FaStar className="w-3 h-3" />
+      </div>
+    )}
+    <div className="package-option-header">
+      <span className={`radio-indicator ${isSelected ? 'active' : ''}`}>
+        {isSelected && <FaCheck className="w-3 h-3 text-white" />}
+      </span>
+      <h4 className="font-semibold text-gray-800">{title}</h4>
     </div>
-    <ul className="space-y-2">
+    <ul className="package-option-features">
       {features.map((feature, index) => (
-        <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
-          <FaCheck className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+        <li key={index}>
+          <FaCheck className="text-teal-500" />
           <span>{feature}</span>
         </li>
       ))}
@@ -55,23 +45,56 @@ const PackageOption = ({ title, price, features, isSelected, onSelect }) => (
   </div>
 );
 
-const LeasingCalculator = ({ carId }) => {
-  const [leasingType, setLeasingType] = useState('rental');
+// Tab Button Component
+const TabButton = ({ label, isActive, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`tab-button ${isActive ? 'active' : ''}`}
+  >
+    {label}
+  </button>
+);
+
+const LeasingCalculator = ({ carId, carPrice }) => {
+  const [activeTab, setActiveTab] = useState('consumer'); // Default to leasing
   const [initialPaymentPercent, setInitialPaymentPercent] = useState(10);
   const [contractMonths, setContractMonths] = useState(36);
   const [annualMileage, setAnnualMileage] = useState(30000);
   const [packageType, setPackageType] = useState('comfort');
   const [monthlyRate, setMonthlyRate] = useState(null);
-  const [calculatedInitialPaymentValue, setCalculatedInitialPaymentValue] = useState(null); // Store calculated zł value
-  const [loading, setLoading] = useState(false);
+  const [calculatedInitialPaymentValue, setCalculatedInitialPaymentValue] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const initialPaymentOptions = [0, 5, 10, 15, 20, 30];
   const contractLengthOptions = [12, 24, 36, 48];
   const annualMileageOptions = [20000, 30000, 40000];
+  
+  // Map internal state to API leasing_type
+  const getLeasingTypeFromTab = (tab) => {
+    switch(tab) {
+      case 'rental': return 'rental';
+      case 'consumer': return 'consumer';
+      case 'cash': return 'cash';
+      default: return 'consumer';
+    }
+  };
+
+  useEffect(() => {
+    if (carPrice && initialPaymentPercent !== null) {
+      const value = (carPrice * initialPaymentPercent) / 100;
+      setCalculatedInitialPaymentValue(value);
+    } else {
+      setCalculatedInitialPaymentValue(null);
+    }
+  }, [carPrice, initialPaymentPercent]);
 
   const calculateLease = useCallback(async () => {
-    if (!carId) return;
+    if (!carId || carPrice === undefined) {
+      setError('Missing car information for calculation.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -81,169 +104,155 @@ const LeasingCalculator = ({ carId }) => {
       contract_months: contractMonths,
       annual_mileage: annualMileage,
       package_type: packageType,
-      leasing_type: leasingType,
+      leasing_type: getLeasingTypeFromTab(activeTab), // Use mapped type
     };
 
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
       const response = await axios.post(`${apiUrl}/api/leasing/calculate/`, payload);
       setMonthlyRate(response.data.monthly_rate);
-      setCalculatedInitialPaymentValue(response.data.initial_payment_value); // Assuming API returns this
+      setCalculatedInitialPaymentValue(response.data.initial_payment_value);
     } catch (err) {
       console.error('Error calculating lease:', err);
-      setError('Calculation failed. Please try again.');
-      setMonthlyRate(null); // Clear rate on error
+      setError('Calculation failed. Check parameters or try again.');
+      setMonthlyRate(null);
       setCalculatedInitialPaymentValue(null);
-      console.error('Lease calculation error details:', err); // Correct: use the caught error object
     } finally {
       setLoading(false);
     }
-  }, [carId, initialPaymentPercent, contractMonths, annualMileage, packageType, leasingType]);
+  }, [carId, carPrice, initialPaymentPercent, contractMonths, annualMileage, packageType, activeTab]);
 
   useEffect(() => {
-    calculateLease();
-  }, [calculateLease]);
+    if (carId && carPrice !== undefined) {
+        calculateLease();
+    }
+  }, [calculateLease, carId, carPrice]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+    <div className="leasing-calculator-container">
+      {/* Tabs */}
+      <div className="tabs-container">
+        <TabButton label="Wynajem" isActive={activeTab === 'rental'} onClick={() => setActiveTab('rental')} />
+        <TabButton label="Leasing konsumencki" isActive={activeTab === 'consumer'} onClick={() => setActiveTab('consumer')} />
+        <TabButton label="Pożyczka gotówkowa" isActive={activeTab === 'cash'} onClick={() => setActiveTab('cash')} />
+      </div>
+
       {/* Monthly Rate Display */}
-      <div className="text-center pb-6 border-b border-gray-100">
+      <div className="rate-display">
         {loading ? (
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto mb-2"></div>
-            <div className="h-4 bg-gray-100 rounded w-1/3 mx-auto"></div>
+          <div className="loading-placeholder rate-loading">
+            <div className="pulse-bg rate-line-1"></div>
+            <div className="pulse-bg rate-line-2"></div>
           </div>
-        ) : (
+        ) : error ? (
+           <div className="error-message">
+             <p className="font-semibold">Błąd kalkulacji</p>
+             <p className="text-sm">{error}</p>
+           </div>
+        ) : monthlyRate !== null ? (
           <>
-            <div className="text-3xl font-bold text-gray-900">
-              {monthlyRate?.toLocaleString()} PLN
-              <span className="text-base font-normal text-gray-500">/month</span>
+            <div className="monthly-rate">
+              {formatNumber(monthlyRate)} zł
             </div>
-            <p className="text-sm text-gray-500 mt-1">Gross price including VAT</p>
+            <p className="rate-note">za miesiąc brutto</p>
           </>
+        ) : (
+          <div className="rate-placeholder">Wybierz opcje, aby zobaczyć cenę.</div>
         )}
       </div>
 
-      {/* Leasing Type Tabs */}
-      <div className="flex border-b border-gray-200">
-        <TabButton
-          id="rental"
-          current={leasingType}
-          label="Rental"
-          onClick={setLeasingType}
-        />
-        <TabButton
-          id="consumer"
-          current={leasingType}
-          label="Consumer Leasing"
-          onClick={setLeasingType}
-        />
-        <TabButton
-          id="cash"
-          current={leasingType}
-          label="Cash Loan"
-          onClick={setLeasingType}
-        />
-      </div>
-
-      {/* Options */}
-      <div className="space-y-5">
+      {/* Options Sections - Adjusted Layout */}
+      <div className="options-grid">
         {/* Initial Payment */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Initial payment {calculatedInitialPaymentValue !== null ? `(${formatNumber(calculatedInitialPaymentValue)} zł)` : ''}
+        <div className="option-section">
+          <label className="option-label">
+            Opłata na start {calculatedInitialPaymentValue !== null ? 
+              <span className="font-semibold">({formatNumber(calculatedInitialPaymentValue)} zł)</span> : ''}
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="button-group">
             {initialPaymentOptions.map(percent => (
-              <OptionButton
-                key={percent}
+              <ToggleButton
+                key={`ip-${percent}`}
                 value={percent}
                 isSelected={initialPaymentPercent === percent}
                 onClick={setInitialPaymentPercent}
               >
                 {percent}%
-              </OptionButton>
+              </ToggleButton>
             ))}
           </div>
         </div>
 
-        {/* Contract Length */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Contract duration
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {contractLengthOptions.map(months => (
-              <OptionButton
-                key={months}
-                value={months}
-                isSelected={contractMonths === months}
-                onClick={setContractMonths}
-              >
-                {months} months
-              </OptionButton>
-            ))}
-          </div>
-        </div>
-
-        {/* Annual Mileage */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Annual mileage
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {annualMileageOptions.map(km => (
-              <OptionButton
-                key={km}
-                value={km}
-                isSelected={annualMileage === km}
-                onClick={setAnnualMileage}
-              >
-                {km/1000}k km
-              </OptionButton>
-            ))}
-          </div>
+        {/* Contract Length & Mileage - Grouped */}
+        <div className="option-section">
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="option-label">
+                        Okres umowy <span className="label-unit">(miesiące)</span>
+                    </label>
+                    <div className="button-group">
+                        {contractLengthOptions.map(months => (
+                        <ToggleButton
+                            key={`m-${months}`}
+                            value={months}
+                            isSelected={contractMonths === months}
+                            onClick={setContractMonths}
+                        >
+                            {months}
+                        </ToggleButton>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <label className="option-label">
+                        Roczny limit km
+                    </label>
+                    <div className="button-group">
+                        {annualMileageOptions.map(km => (
+                        <ToggleButton
+                            key={`km-${km}`}
+                            value={km}
+                            isSelected={annualMileage === km}
+                            onClick={setAnnualMileage}
+                        >
+                            {km/1000} tys.
+                        </ToggleButton>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
 
         {/* Package Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Package type
+        <div className="option-section">
+          <label className="option-label">
+            Pakiet
           </label>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="package-options-container">
             <PackageOption
               title="Basic"
-              price="0"
-              features={['Damage coordination', 'Insurance']}
+              features={['Koordynacja likwidacji szkód', 'Ubezpieczenie']}
               isSelected={packageType === 'basic'}
               onSelect={() => setPackageType('basic')}
             />
             <PackageOption
               title="Comfort"
-              price="299"
               features={[
-                'Damage coordination',
-                'Insurance',
-                'Replacement car',
-                'Service',
-                'Tires'
+                'Koordynacja likwidacji szkód',
+                'Ubezpieczenie',
+                'Auto zastępcze',
+                'Serwis',
+                'Opony'
               ]}
               isSelected={packageType === 'comfort'}
               onSelect={() => setPackageType('comfort')}
+              isRecommended={true}
             />
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="pt-4 flex flex-col sm:flex-row gap-3">
-        <button className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-          Ask a question
-        </button>
-        <button className="flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors">
-          Apply online
-        </button>
-      </div>
+      {/* Action Buttons are now in CarDetails.jsx */}
     </div>
   );
 };
