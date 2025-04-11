@@ -1,18 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import LeasingCalculator from '../components/LeasingCalculator';
 import '../styles/NewCars.css';
+
+const useResponsiveGrid = () => {
+  const [carsPerPage, setCarsPerPage] = useState(getInitialCarsPerPage());
+
+  function getInitialCarsPerPage() {
+    const width = window.innerWidth;
+    if (width >= 1400) return 9;      // Large desktop
+    if (width >= 1200) return 6;      // Desktop
+    if (width >= 768) return 4;       // Tablet
+    return 3;                         // Mobile
+  }
+
+  useEffect(() => {
+    function handleResize() {
+      setCarsPerPage(getInitialCarsPerPage());
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return carsPerPage;
+};
 
 const NewCars = () => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedCar, setSelectedCar] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     make: '',
     priceRange: '',
     bodyType: ''
   });
+
+  const carsPerPage = useResponsiveGrid();
+
+  // Reset to first page when filters change or cars per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, carsPerPage]);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -22,10 +51,9 @@ const NewCars = () => {
           throw new Error('Failed to fetch cars');
         }
         const data = await response.json();
-        console.log('Fetched cars:', data); // Debug log
         setCars(data);
       } catch (err) {
-        console.error('Error fetching cars:', err); // Debug log
+        console.error('Error fetching cars:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -51,19 +79,16 @@ const NewCars = () => {
     return true;
   });
 
-  const handleCarSelect = (car) => {
-    setSelectedCar(car);
-    // Scroll to calculator for better UX
-    document.querySelector('.calculator-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Pagination logic
+  const indexOfLastCar = currentPage * carsPerPage;
+  const indexOfFirstCar = indexOfLastCar - carsPerPage;
+  const currentCars = filteredCars.slice(indexOfFirstCar, indexOfLastCar);
+  const totalPages = Math.ceil(filteredCars.length / carsPerPage);
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return '/images/car-placeholder.jpg';
-    // If the path already includes the full URL, use it as is
     if (imagePath.startsWith('http')) return imagePath;
-    // If the path already includes /media/, don't add it again
     if (imagePath.startsWith('/media/')) return `http://localhost:8000${imagePath}`;
-    // Otherwise, construct the full URL
     return `http://localhost:8000/media/${imagePath}`;
   };
 
@@ -132,12 +157,11 @@ const NewCars = () => {
 
         <div className="new-cars__content">
           <div className="new-cars__grid">
-            {filteredCars.length > 0 ? (
-              filteredCars.map((car) => (
+            {currentCars.length > 0 ? (
+              currentCars.map((car) => (
                 <div
                   key={car.id}
-                  className={`new-cars__card ${selectedCar?.id === car.id ? 'new-cars__card--selected' : ''}`}
-                  onClick={() => handleCarSelect(car)}
+                  className="new-cars__card"
                 >
                   <div className="new-cars__card-image">
                     <img src={getImageUrl(car.image)} alt={`${car.make} ${car.model}`} />
@@ -162,10 +186,34 @@ const NewCars = () => {
             )}
           </div>
 
-          <div className="new-cars__calculator">
-            <h2 className="section-title">Calculate Your Lease Payment</h2>
-            <LeasingCalculator selectedCar={selectedCar} />
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="new-cars__pagination">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="new-cars__pagination-btn"
+              >
+                Previous
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`new-cars__pagination-btn ${currentPage === index + 1 ? 'new-cars__pagination-btn--active' : ''}`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="new-cars__pagination-btn"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

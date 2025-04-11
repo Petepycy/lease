@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Car, Lease, Employee, SlideshowImage
+from .models import Car, Lease, Employee, SlideshowImage, CarBrand, ProcessStep, ContactSubmission, LeasingParameter
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
@@ -28,3 +28,52 @@ class SlideshowImageAdmin(admin.ModelAdmin):
     list_editable = ('active', 'order')
     search_fields = ('title', 'description')
     list_filter = ('active',)
+
+@admin.register(CarBrand)
+class CarBrandAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'display_order', 'created_at')
+    list_editable = ('is_active', 'display_order')
+    search_fields = ('name',)
+    list_filter = ('is_active',)
+    ordering = ('display_order', 'name')
+
+@admin.register(ProcessStep)
+class ProcessStepAdmin(admin.ModelAdmin):
+    list_display = ('step_number', 'title', 'is_active', 'created_at', 'updated_at')
+    list_editable = ('is_active',)
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('title', 'description')
+    ordering = ('step_number',)
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('step_number', 'title', 'description')
+        }),
+        ('Visual Elements', {
+            'fields': ('icon',),
+            'description': 'Enter FontAwesome icon class (e.g., fas fa-car)'
+        }),
+        ('Status', {
+            'fields': ('is_active',),
+            'description': 'Toggle to show/hide this step on the website'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(LeasingParameter)
+class LeasingParameterAdmin(admin.ModelAdmin):
+    list_display = ('leasing_type', 'package_type', 'base_rate_multiplier', 'is_active')
+    list_filter = ('leasing_type', 'package_type', 'is_active')
+    search_fields = ('leasing_type', 'package_type')
+    fieldsets = (
+        (None, {
+            'fields': ('leasing_type', 'package_type', 'is_active')
+        }),
+        ('Calculation Parameters', {
+            'fields': ('base_rate_multiplier', 'annual_mileage_factor', 
+                      'contract_length_factor', 'initial_payment_discount', 'package_base_cost')
+        }),
+    )

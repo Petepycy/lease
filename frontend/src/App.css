@@ -67,6 +67,12 @@ img {
   padding-top: 90px; /* Add top padding only on non-home pages */
 }
 
+/* Remove padding when contact route is active */
+.app-main.main-content-padded.contact-route-active {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 /* Header Styles */
 .header {
   position: fixed;

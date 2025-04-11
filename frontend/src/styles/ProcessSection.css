@@ -1,0 +1,196 @@
+.process-section {
+  position: relative;
+  padding: 6rem 0;
+  overflow: hidden; /* Hide overflow for pseudo-elements */
+}
+
+.process-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a2e; /* Dark background color */
+  z-index: -1;
+  /* Zig-zag pattern using clip-path (adjust points as needed) */
+  clip-path: polygon(
+    0 0, 100% 0, 100% 90%,
+    95% 100%, 90% 90%, 85% 100%, 80% 90%, 75% 100%, 70% 90%, 65% 100%, 60% 90%,
+    55% 100%, 50% 90%, 45% 100%, 40% 90%, 35% 100%, 30% 90%, 25% 100%, 20% 90%,
+    15% 100%, 10% 90%, 5% 100%, 0 90%
+  );
+}
+
+/* Add another pseudo-element for a top zig-zag if needed */
+.process-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px; /* Adjust height */
+    background: #1a1a2e; /* Match background */
+    clip-path: polygon(
+        0 100%, 5% 0, 10% 100%, 15% 0, 20% 100%, 25% 0, 30% 100%, 35% 0, 40% 100%, 45% 0,
+        50% 100%, 55% 0, 60% 100%, 65% 0, 70% 100%, 75% 0, 80% 100%, 85% 0, 90% 100%, 95% 0,
+        100% 100%, 100% 100%, 0 100%
+    );
+    z-index: 1; /* Ensure it's above content but below header */
+}
+
+
+.process-section .container {
+  max-width: var(--container-width, 1200px);
+  margin: 0 auto;
+  padding: 0 1rem;
+  position: relative; /* Ensure content is above background */
+  z-index: 2;
+}
+
+.process-section .section-title {
+  color: #fff; /* White title on dark background */
+  text-align: center;
+  font-size: 2.8rem;
+  font-weight: 600;
+  margin-bottom: 4rem;
+  position: relative;
+}
+
+.process-steps-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* Fixed 5 columns */
+  gap: 2rem;
+  max-width: 1400px; /* Increased max-width to accommodate 5 columns */
+  margin: 0 auto;
+}
+
+.process-step-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: 0 1rem; /* Add padding to prevent text from touching edges */
+}
+
+.step-number {
+  font-size: 4rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.1); /* Light, transparent number */
+  position: absolute;
+  top: -2rem; /* Position above the content */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  line-height: 1;
+}
+
+.step-content {
+  position: relative;
+  z-index: 2;
+  padding-top: 3rem; /* Space for the number */
+  color: #e0e0e0; /* Light text color */
+}
+
+.step-icon {
+  font-size: 2.5rem;
+  color: var(--color-primary); /* Use primary color for icon */
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+
+.process-step-card h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff; /* White title */
+  margin-bottom: 1rem;
+}
+
+.process-step-card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #c0c0c0; /* Slightly darker grey for description */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .process-steps-container {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns for large tablets */
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .process-section {
+    padding: 5rem 0;
+  }
+  .process-steps-container {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns for tablets */
+    gap: 2rem;
+  }
+  .process-section .section-title {
+    font-size: 2.4rem;
+    margin-bottom: 3rem;
+  }
+  .step-number {
+    font-size: 3.5rem;
+    top: -1.5rem;
+  }
+  .step-content {
+    padding-top: 2.5rem;
+  }
+  .process-step-card h3 {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .process-steps-container {
+    grid-template-columns: 1fr; /* Single column for mobile */
+    gap: 3rem;
+  }
+  .process-section {
+    padding: 4rem 0;
+  }
+  .process-section .section-title {
+    font-size: 2rem;
+  }
+  .step-number {
+    font-size: 3rem;
+    top: -1rem;
+  }
+  .step-content {
+    padding-top: 2rem;
+  }
+  .step-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  .process-step-card h3 {
+    font-size: 1.2rem;
+  }
+  .process-step-card p {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .process-step-card {
+    align-items: flex-start;
+    text-align: left;
+    padding-left: 3.5rem;
+  }
+  .step-number {
+    left: 0;
+    top: 0;
+    transform: none;
+    font-size: 2.5rem;
+    color: rgba(255, 255, 255, 0.15);
+  }
+  .step-content {
+    padding-top: 0;
+  }
+  .step-icon {
+    display: none;
+  }
+} 

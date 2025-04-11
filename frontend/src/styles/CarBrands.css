@@ -1,0 +1,125 @@
+.car-brands {
+  padding: 4rem 0;
+  background: var(--color-background);
+}
+
+.car-brands .container {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.car-brands h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 3rem;
+  color: var(--color-text);
+}
+
+.brands-grid {
+  padding: 1rem;
+}
+
+.brand-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.brand-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.brand-logo {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.brand-card h3 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Swiper modifications */
+.car-brands .swiper {
+  padding: 1rem;
+}
+
+.car-brands .swiper-slide {
+  height: auto;
+}
+
+@media (max-width: 1024px) {
+  .car-brands {
+    padding: 3rem 0;
+  }
+
+  .car-brands h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .brand-card {
+    height: 160px;
+    padding: 1.5rem;
+  }
+
+  .brand-logo {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .car-brands {
+    padding: 2.5rem 0;
+  }
+
+  .brand-card {
+    height: 140px;
+    padding: 1rem;
+  }
+
+  .brand-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.75rem;
+  }
+
+  .brand-card h3 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .car-brands h2 {
+    font-size: 1.75rem;
+  }
+
+  .brand-card {
+    height: 120px;
+  }
+} 

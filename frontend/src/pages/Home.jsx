@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
+import CarBrands from '../components/CarBrands';
+import ProcessSection from '../components/ProcessSection';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -154,6 +156,10 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      <ProcessSection />
+
+      <CarBrands />
 
       <section className="benefits">
         <div className="container">
