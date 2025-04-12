@@ -64,7 +64,7 @@ img {
 }
 
 .app-main.main-content-padded {
-  padding-top: 90px; /* Add top padding only on non-home pages */
+  padding-top: 0px; /* Add top padding only on non-home pages */
 }
 
 /* Remove padding when contact route is active */
@@ -148,7 +148,7 @@ img {
 .title {
   font-size: 4rem;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
 }
 
 .top__link {

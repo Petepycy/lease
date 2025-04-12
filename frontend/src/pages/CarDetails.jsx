@@ -1,35 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import LeasingCalculator from '../components/LeasingCalculator';
-import LoadingState from '../components/LoadingState';
-import ErrorState from '../components/ErrorState';
-import { FaCalendarAlt, FaTachometerAlt, FaGasPump, FaCog, FaMapMarkerAlt, FaPaintBrush, FaChair, FaGlobeAmericas, FaChevronLeft, FaChevronRight, FaExpand, FaQuestionCircle, FaArrowRight } from 'react-icons/fa'; // Added more icons
-import '../styles/CarDetails.css'; // Add import for the new CSS file
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import '../styles/CarDetails.css';
+
+// Base64 encoded placeholder image
+const FALLBACK_IMAGE_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNOTAgODBIMTEwQzExNS41MjMgODAgMTIwIDg0LjQ3NzIgMTIwIDkwVjExMEMxMjAgMTE1LjUyMyAxMTUuNTIzIDEyMCAxMTAgMTIwSDkwQzg0LjQ3NzIgMTIwIDgwIDExNS41MjMgODAgMTEwVjkwQzgwIDg0LjQ3NzIgODQuNDc3MiA4MCA5MCA4MFoiIGZpbGw9IiM5Q0EzQUYiLz48cGF0aCBkPSJNMTEwIDg1SDkwQzg3LjIzODYgODUgODUgODcuMjM4NiA4NSA5MFYxMTBDODUgMTEyLjc2MSA4Ny4yMzg2IDExNSA5MCAxMTVIMTEwQzExMi43NjEgMTE1IDExNSAxMTIuNzYxIDExNSAxMTBWOTBDMTE1IDg3LjIzODYgMTEyLjc2MSA4NSAxMTAgODVaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==';
 
 const CarDetails = () => {
   const { id } = useParams();
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [relatedCars, setRelatedCars] = useState([]);
+  const detailsRef = useRef(null);
+  
+  // New state for gallery
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isThumbnailSliderOpen, setIsThumbnailSliderOpen] = useState(false);
+  const [images, setImages] = useState([]);
 
-  // Use images array directly from the API response
-  const images = car?.images || [];
+  // Add these new state variables and functions at the top of the component, after the existing state declarations:
+  const [downPayment, setDownPayment] = useState(car?.price ? Math.round(car.price * 0.1) : 0);
+  const [leaseTerm, setLeaseTerm] = useState(36);
+  const [interestRate, setInterestRate] = useState(3.99);
+
+  // Handle keyboard events for modal navigation
+  const handleKeyDown = useCallback((e) => {
+    if (!isModalOpen) return;
+    
+    switch (e.key) {
+      case 'ArrowLeft':
+        setCurrentImageIndex((prev) => 
+          prev === 0 ? images.length - 1 : prev - 1
+        );
+        break;
+      case 'ArrowRight':
+        setCurrentImageIndex((prev) => 
+          prev === images.length - 1 ? 0 : prev + 1
+        );
+        break;
+      case 'Escape':
+        setIsModalOpen(false);
+        break;
+      default:
+        break;
+    }
+  }, [isModalOpen, images.length]);
+
+  // Add/remove keyboard event listeners
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   useEffect(() => {
     const fetchCarDetails = async () => {
-      setLoading(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        const response = await axios.get(`${apiUrl}/api/cars/${id}/`);
-        setCar(response.data);
-        setError(null);
+        const response = await fetch(`http://localhost:8000/api/cars/${id}/`);
+        if (!response.ok) throw new Error('Car not found');
+        const data = await response.json();
+        setCar(data);
+        
+        // Set up images array from car data
+        const carImages = data.car_images?.map(img => img.image_url || img.image) || [];
+        if (data.default_image_url && !carImages.includes(data.default_image_url)) {
+          carImages.unshift(data.default_image_url);
+        }
+        setImages(carImages.length > 0 ? carImages : [FALLBACK_IMAGE_BASE64]);
+
+        // Fetch related cars (excluding current car)
+        const relatedData = await fetch('http://localhost:8000/api/cars/').then(res => res.json());
+        setRelatedCars(
+          relatedData
+            .filter(c => c.id !== parseInt(id))
+            .slice(0, 3)
+        );
       } catch (err) {
-        console.error('Error fetching car details:', err);
-        setError('Failed to load car details. Please try again later.');
-        setCar(null);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -38,182 +84,317 @@ const CarDetails = () => {
     fetchCarDetails();
   }, [id]);
 
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return '/placeholder-car.jpg';
-    
-    // Handle full URLs (including S3 URLs)
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
+  const scrollToDetails = () => {
+    detailsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const getImageUrl = (car) => {
+    if (car.default_image_url) {
+      return car.default_image_url;
     }
     
-    // Handle S3 key format
-    if (imagePath.startsWith('cars/')) {
-      const s3BaseUrl = import.meta.env.VITE_S3_BASE_URL || 'https://your-bucket.s3.region.amazonaws.com';
-      return `${s3BaseUrl}/${imagePath}`;
+    if (car.car_images && car.car_images.length > 0) {
+      const firstImage = car.car_images[0];
+      return firstImage.image_url || firstImage.image;
     }
     
-    // Legacy support for local media files
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const cleanedApiUrl = apiUrl.replace(/\/$/, '');
-    const cleanedImagePath = imagePath.startsWith('/media/') ? imagePath.substring(1) : imagePath;
-    return `${cleanedApiUrl}/${cleanedImagePath}`;
+    return FALLBACK_IMAGE_BASE64;
   };
-  
-  // Basic Info items configuration
-  const basicInfoItems = [
-    { icon: FaCalendarAlt, value: car?.year, label: 'Rok' },
-    { icon: FaTachometerAlt, value: car?.mileage?.toLocaleString(), label: 'Przebieg', unit: 'km' },
-    { icon: FaGasPump, value: car?.fuel_type, label: 'Paliwo' },
-    { icon: FaCog, value: car?.transmission, label: 'Skrzynia biegów' },
-  ];
 
-  // Detailed Specs items configuration
-  const detailedSpecsItems = [
-    { label: 'Pojemność silnika', value: car?.engine_capacity, unit: 'cm³' },
-    { label: 'Moc silnika', value: car?.power, unit: 'KM' },
-    { label: 'Kolor', value: car?.color },
-    { label: 'Typ nadwozia', value: car?.body_type },
-    { label: 'Liczba miejsc', value: car?.seats },
-    { label: 'Kraj pochodzenia', value: car?.origin_country },
-  ];
-
-  const handleThumbnailClick = (index) => {
-    setCurrentImageIndex(index);
-  };
-  
   const handlePrevImage = () => {
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === 0 ? images.length - 1 : prevIndex - 1
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? images.length - 1 : prev - 1
     );
   };
-  
+
   const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === images.length - 1 ? 0 : prevIndex + 1
+    setCurrentImageIndex((prev) => 
+      prev === images.length - 1 ? 0 : prev + 1
     );
   };
 
-  const toggleThumbnailSlider = () => {
-    setIsThumbnailSliderOpen(!isThumbnailSliderOpen);
+  const openModal = (index) => {
+    setCurrentImageIndex(index);
+    setIsModalOpen(true);
   };
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
-  if (!car) return <ErrorState message="Car details are unavailable." />;
+  const calculateMonthlyPayment = () => {
+    if (!car?.price) return 0;
+    
+    const loanAmount = car.price - downPayment;
+    const monthlyRate = (interestRate / 100) / 12;
+    const numberOfPayments = leaseTerm;
+    
+    const monthlyPayment =
+      (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) /
+      (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+      
+    return isNaN(monthlyPayment) ? 0 : monthlyPayment;
+  };
+
+  const calculateTotalCost = () => {
+    const monthlyPayment = calculateMonthlyPayment();
+    return downPayment + (monthlyPayment * leaseTerm);
+  };
+
+  if (loading) return <div className="car-details__loading">Loading...</div>;
+  if (error) return <div className="car-details__error">{error}</div>;
+  if (!car) return <div className="car-details__error">Car not found</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col lg:flex-row lg:gap-12">
-        <div className="lg:w-3/5 space-y-8 md:space-y-10 mb-8 lg:mb-0">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="car-details__image-container">
-              <img
-                src={getImageUrl(images[currentImageIndex])}
-                alt={`${car.make} ${car.model}`}
-                className="car-details__main-image"
-              />
-              <button
-                onClick={handlePrevImage}
-                className="car-details__prev-button"
-                aria-label="Previous image"
-              >
-                ←
-              </button>
-              <button
-                onClick={handleNextImage}
-                className="car-details__next-button"
-                aria-label="Next image"
-              >
-                →
-              </button>
+    <div className="car-details">
+      {/* Hero Section */}
+      <section 
+        className="car-details__hero"
+        style={{ backgroundImage: `url(${getImageUrl(car)})` }}
+      >
+        <div className="car-details__hero-overlay">
+          <div className="car-details__hero-content">
+            <span className="car-details__year">{car.year}</span>
+            <h1 className="car-details__title">{car.make} {car.model}</h1>
+            <p className="car-details__price">${car.price?.toLocaleString()}</p>
+            <div className="car-details__cta">
+              <button className="car-details__button">Email us</button>
+              <button className="car-details__button">Call us</button>
             </div>
+          </div>
+        </div>
+        <button className="car-details__scroll-indicator" onClick={scrollToDetails}>
+          More Details ↓
+        </button>
+      </section>
+
+      {/* Info Bar */}
+      <section className="car-details__info-bar" ref={detailsRef}>
+        <div className="car-details__info-item">
+          <span className="info-label">Przebieg</span>
+          <span className="info-value">{car.mileage?.toLocaleString()} km</span>
+        </div>
+        <div className="car-details__info-item">
+          <span className="info-label">Rodzaj paliwa</span>
+          <span className="info-value">{car.fuel_type || 'Benzyna'}</span>
+        </div>
+        <div className="car-details__info-item">
+          <span className="info-label">Skrzynia biegów</span>
+          <span className="info-value">{car.transmission || 'Automatyczna'}</span>
+        </div>
+        <div className="car-details__info-item">
+          <span className="info-label">Typ nadwozia</span>
+          <span className="info-value">{car.body_type || 'Coupe'}</span>
+        </div>
+        <div className="car-details__info-item">
+          <span className="info-label">Pojemność skokowa</span>
+          <span className="info-value">{car.engine_capacity || '6.5'} L</span>
+        </div>
+        <div className="car-details__info-item">
+          <span className="info-label">Moc</span>
+          <span className="info-value">{car.power || '800'} KM</span>
+        </div>
+      </section>
+
+      {/* Gallery */}
+      <section className="car-details__gallery">
+        <div className="car-details__gallery-container">
+          <button 
+            className="car-details__gallery-nav car-details__gallery-nav--prev"
+            onClick={() => handlePrevImage()}
+            aria-label="Previous image"
+          >
+            ←
+          </button>
+          
+          <div className="car-details__gallery-slider">
+            {images.map((image, index) => (
+              <div 
+                key={index}
+                className="car-details__gallery-item"
+                onClick={() => openModal(index)}
+              >
+                <img 
+                  src={image} 
+                  alt={`${car.make} ${car.model} - View ${index + 1}`}
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+
+          <button 
+            className="car-details__gallery-nav car-details__gallery-nav--next"
+            onClick={() => handleNextImage()}
+            aria-label="Next image"
+          >
+            →
+          </button>
+        </div>
+      </section>
+
+      {/* Image Modal */}
+      {isModalOpen && (
+        <div 
+          className="car-details__modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+        >
+          <div className="car-details__modal-content">
+            <button 
+              className="car-details__modal-close"
+              onClick={() => setIsModalOpen(false)}
+              aria-label="Close modal"
+            >
+              ×
+            </button>
             
-            <div className="car-details__thumbnails-container">
-              <button
-                onClick={toggleThumbnailSlider}
-                className="car-details__thumbnails-toggle"
-              >
-                {isThumbnailSliderOpen ? 'Hide Thumbnails' : 'Show Thumbnails'}
-              </button>
-              
-              {isThumbnailSliderOpen && (
-                <div className="car-details__thumbnails-slider">
-                  {images.map((image, index) => (
-                    <div
-                      key={index}
-                      className={`car-details__thumbnail ${
-                        index === currentImageIndex ? 'car-details__thumbnail--active' : ''
-                      }`}
-                      onClick={() => handleThumbnailClick(index)}
-                    >
-                      <img
-                        src={getImageUrl(image)}
-                        alt={`Thumbnail ${index + 1}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+            <button 
+              className="car-details__modal-nav car-details__modal-nav--prev"
+              onClick={handlePrevImage}
+              aria-label="Previous image"
+            >
+              ←
+            </button>
+
+            <div className="car-details__modal-image-container">
+              <img 
+                src={images[currentImageIndex]} 
+                alt={`${car.make} ${car.model} - View ${currentImageIndex + 1}`}
+              />
+            </div>
+
+            <button 
+              className="car-details__modal-nav car-details__modal-nav--next"
+              onClick={handleNextImage}
+              aria-label="Next image"
+            >
+              →
+            </button>
+
+            <div className="car-details__modal-counter">
+              {currentImageIndex + 1} / {images.length}
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="bg-white rounded-lg shadow-md p-6 md:p-7">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">Informacje podstawowe</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {basicInfoItems.map((item, index) => item.value ? (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200/80">
-                  <item.icon className="text-blue-600 w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">{item.label}</p>
-                    <p className="text-sm font-medium text-gray-800">
-                        {item.value}{item.unit ? <span className="text-xs"> {item.unit}</span> : ''}
-                    </p>
-                  </div>
-                </div>
-              ) : null)}
-            </div>
-          </div>
+      {/* Description */}
+      <section className="car-details__description">
+        <h2>Opis</h2>
+        <div className="car-details__description-content">
+          {car.description}
+        </div>
+      </section>
 
-          <div className="bg-white rounded-lg shadow-md p-6 md:p-7">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">Dane techniczne</h2>
-            <div className="space-y-3">
-              {detailedSpecsItems.map((item, index) => item.value ? (
-                <div key={index} className="flex justify-between items-center pt-3 border-t border-gray-100 first:pt-0 first:border-t-0">
-                  <p className="text-sm text-gray-600">{item.label}</p>
-                  <p className="text-sm font-semibold text-gray-800">
-                      {item.value}{item.unit ? <span className="text-xs"> {item.unit}</span> : ''}
-                  </p>
-                </div>
-               ) : null)}
-            </div>
-          </div>
-
-          {car.description && (
-            <div className="bg-white rounded-lg shadow-md p-6 md:p-7">
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-5">Opis pojazdu</h2>
-              <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed">
-                <p className="whitespace-pre-line">{car.description}</p>
+      {/* Leasing Calculator */}
+      <section className="car-details__leasing">
+        <h2>Kalkulator Leasingu</h2>
+        <div className="car-details__leasing-calculator">
+          <div className="car-details__leasing-inputs">
+            <div className="leasing-input-group">
+              <label htmlFor="carPrice">Cena pojazdu</label>
+              <div className="input-with-prefix">
+                <span>$</span>
+                <input
+                  type="number"
+                  id="carPrice"
+                  value={car.price || 0}
+                  disabled
+                />
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="lg:w-2/5">
-          <div className="lg:sticky lg:top-28 space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-5 md:p-6">
-              <LeasingCalculator carId={id} carPrice={car.price} />
+            <div className="leasing-input-group">
+              <label htmlFor="downPayment">Wpłata własna</label>
+              <div className="input-with-prefix">
+                <span>$</span>
+                <input
+                  type="number"
+                  id="downPayment"
+                  defaultValue={Math.round(car.price * 0.1)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (value >= 0 && value <= car.price) {
+                      setDownPayment(value);
+                    }
+                  }}
+                />
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button className="flex-1 btn-outline">
-                <FaQuestionCircle className="mr-2" /> Zadaj pytanie
-              </button>
-              <button className="flex-1 btn-primary-green">
-                Wnioskuj online <FaArrowRight className="ml-2" />
-              </button>
+
+            <div className="leasing-input-group">
+              <label htmlFor="leaseTerm">Okres leasingu (miesiące)</label>
+              <select 
+                id="leaseTerm"
+                defaultValue={36}
+                onChange={(e) => setLeaseTerm(parseInt(e.target.value))}
+              >
+                <option value={24}>24 miesiące</option>
+                <option value={36}>36 miesięcy</option>
+                <option value={48}>48 miesięcy</option>
+                <option value={60}>60 miesięcy</option>
+              </select>
+            </div>
+
+            <div className="leasing-input-group">
+              <label htmlFor="interestRate">Oprocentowanie roczne (%)</label>
+              <div className="input-with-suffix">
+                <input
+                  type="number"
+                  id="interestRate"
+                  defaultValue={3.99}
+                  step="0.01"
+                  min="0"
+                  max="20"
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (value >= 0 && value <= 20) {
+                      setInterestRate(value);
+                    }
+                  }}
+                />
+                <span>%</span>
+              </div>
             </div>
           </div>
+
+          <div className="car-details__leasing-summary">
+            <div className="leasing-summary-item">
+              <span>Miesięczna rata:</span>
+              <strong>${calculateMonthlyPayment().toFixed(2)}</strong>
+            </div>
+            <div className="leasing-summary-item">
+              <span>Całkowity koszt leasingu:</span>
+              <strong>${calculateTotalCost().toFixed(2)}</strong>
+            </div>
+            <button className="car-details__leasing-cta">
+              Zapytaj o leasing
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Related Cars */}
+      <section className="car-details__related">
+        <h2>Zobacz też</h2>
+        <div className="car-details__related-grid">
+          {relatedCars.map(relatedCar => (
+            <Link 
+              to={`/car-details/${relatedCar.id}`} 
+              key={relatedCar.id}
+              className="car-details__related-card"
+            >
+              <div className="car-details__related-image">
+                <img src={getImageUrl(relatedCar)} alt={`${relatedCar.make} ${relatedCar.model}`} />
+              </div>
+              <div className="car-details__related-info">
+                <h3>{relatedCar.make} {relatedCar.model}</h3>
+                <p className="car-details__related-price">
+                  ${relatedCar.price?.toLocaleString()}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
